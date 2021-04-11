@@ -843,22 +843,26 @@ body {
 }
 
 /* 類別與產品圖表切換 */
+.section-category:hover,.section-product:hover{
+  border-bottom: 2px solid #000;
+}
 .section-product{
-    opacity: .3;
+  color: #B9B9B9;
 }
 #sortByProductsChart{
     display: none;
 }
 #allproduct .section-product{
-    opacity: 1;
+    color:#000;
 }
 #allproduct #sortByProductsChart{
     display: block;
 }
 #allproduct .section-category{
-    opacity: .3;
+    color: #B9B9B9;
 }
 #allproduct #sortByCategoryChart{
     display: none;
 }
+
 
