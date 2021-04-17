@@ -626,6 +626,11 @@ body {
   border-bottom: 0;
 }
 
+.shoppingCart-table a{
+  vertical-align: sub;
+  
+}
+
 @media (max-width: 767px) {
   .shoppingCart-table {
     width: 700px;
@@ -838,9 +843,6 @@ body {
 }
 /*# sourceMappingURL=all.css.map */
 
-.red{
-    color:red !important;
-}
 
 /* 類別與產品圖表切換 */
 .section-category:hover,.section-product:hover{
@@ -865,4 +867,9 @@ body {
     display: none;
 }
 
-
+.material-icons{
+  color:#6A33F8;
+}
+.material-icons:hover{
+  color:#c0aafd;
+}

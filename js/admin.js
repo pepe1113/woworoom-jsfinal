@@ -9,7 +9,6 @@ const config = {
 
 const orderTable = document.querySelector(".js-orderTable");
 let orderList = [];
-let productTitle;
 
 //GET　取得訂單列表
 function getOrderList() {
@@ -30,10 +29,13 @@ getOrderList();
 function renderOrder() {
   orderTable.innerHTML = "";
   orderList.forEach(function (item, index) {
-    productTitle = "";
+    let productTitle;
     item.products.forEach(function (item) {
-      productTitle += `${item.title}<br>`;
+      productTitle += `${item.title}x${item.quantity}<br>`;
     });
+
+    let date = new Date(item.createdAt * 1000);
+    date = `${date.getFullYear()}年${date.getMonth()}月${date.getDate()}日`;
 
     orderTable.innerHTML += `<tr>
     <td>${item.id}</td>
@@ -46,9 +48,11 @@ function renderOrder() {
     <td>
       <p>${productTitle}</p>
     </td>
-    <td>${item.createdAt}</td>
+    <td>${date}</td>
     <td class="orderStatus">
-      <a href="#" data-num=${index}>${item.paid ? "已處理" : "未處理"}</a>
+      <a href="#" data-paid=${item.paid} data-id=${item.id}>${
+      item.paid ? "已處理" : "未處理"
+    }</a>
     </td>
     <td>
       <input type="button" class="delSingleOrder-Btn" value="刪除" data-id=${
@@ -62,6 +66,10 @@ function renderOrder() {
 //DELETE 清除全部訂單
 function deleteAllOrder(e) {
   e.preventDefault();
+  if (orderList.length == 0) {
+    alert("沒有訂單");
+    return;
+  }
   if (confirm("確定清除全部訂單？")) {
     axios
       .delete(`${url}`, config)
@@ -80,39 +88,58 @@ discardAllBtn.addEventListener("click", deleteAllOrder);
 
 //DELETE 清除單一訂單
 function deleteOrder(e) {
-  e.preventDefault();
-  console.log(e.target.dataset.id);
-  orderList.forEach(function (item) {
-    if (e.target.value === "刪除") {
-      axios
-        .delete(`${url}/${e.target.dataset.id}`, config)
-        .then(function (res) {
-          orderList = res.data.orders;
-          renderOrder();
-          c3PieChart();
-        })
-        .catch(function (err) {
-          console.log(err);
-        });
-    }
-  });
+  if (e.target.getAttribute("value") !== "刪除") {
+    return;
+  }
+  axios
+    .delete(`${url}/${e.target.dataset.id}`, config)
+    .then(function (res) {
+      getOrderList();
+    })
+    .catch(function (err) {
+      console.log(err);
+    });
 }
-orderTable.addEventListener("click", deleteOrder);
 
 //改變訂單狀態(已處理/未處理)
-function changeStatus(e) {
-  e.preventDefault();
-  if (e.target.textContent === "未處理") {
-    e.target.textContent = "已處理";
-    e.target.setAttribute("class", "red");
-    orderList[e.target.dataset.num].paid = true;
-  } else if (e.target.textContent === "已處理") {
-    e.target.textContent = "未處理";
-    e.target.removeAttribute("class");
-    orderList[e.target.dataset.num].paid = false;
+function editOrderStatus(e) {
+  if (!e.target.dataset.paid) {
+    return;
   }
+  let id = e.target.dataset.id;
+  let status = e.target.dataset.paid;
+  if (status == "true") {
+    status = false;
+    e.target.textContent = "未處理";
+  } else {
+    status = true;
+    e.target.textContent = "已處理";
+  }
+
+  axios
+    .put(
+      `${url}`,
+      {
+        data: {
+          id: id,
+          paid: status,
+        },
+      },
+      config
+    )
+    .then(function (res) {
+      getOrderList();
+    })
+    .catch(function (err) {
+      console.log(err);
+    });
 }
-orderTable.addEventListener("click", changeStatus);
+
+orderTable.addEventListener("click", function (e) {
+  e.preventDefault();
+  editOrderStatus(e);
+  deleteOrder(e);
+});
 
 let allSoldProducts = [];
 let productsByCategory = {};
@@ -124,33 +151,25 @@ let totalTop3 = [];
 
 //C3圓餅圖
 function c3PieChart() {
-  letEmpty();
-  orderList.forEach(changeSoldProducts);
-  //全類別營收比重
-  allSoldProducts.forEach(sortByCategory);
-  toCategoryData();
-  allCategoryChart();
-  //全產品營收比重
-  allSoldProducts.forEach(changeTotal);
-  toTotalData();
-  sortByTotal();
-  allProductsChart();
-}
-
-function letEmpty() {
   allSoldProducts = [];
   productsByCategory = {};
   categoryChartData = [];
   productTotal = {};
   totalData = [];
   totalTop3 = [];
+
+  orderList.forEach(function (item) {
+    allSoldProducts.push(...item.products);
+  });
+  //全類別營收比重
+  allSoldProducts.forEach(sortByCategory);
+  allCategoryChart();
+  //全產品營收比重
+  allSoldProducts.forEach(changeTotal);
+  allProductsChart();
 }
 
-//取得allSoldProducts
-function changeSoldProducts(item) {
-  allSoldProducts.push(...item.products);
-}
-//取得productsByCategory
+//LV1全類別營收比重
 function sortByCategory(item) {
   if (productsByCategory[item.category] == undefined) {
     productsByCategory[item.category] = item.quantity * item.price;
@@ -158,17 +177,14 @@ function sortByCategory(item) {
     productsByCategory[item.category] += item.quantity * item.price;
   }
 }
-//取得categoryChartData
-function toCategoryData() {
+function allCategoryChart() {
   let category = Object.keys(productsByCategory);
   category.forEach(function (item) {
     let arr = [item];
     arr.push(productsByCategory[item]);
     categoryChartData.push(arr);
   });
-}
-//c3chart 全類別營收比重
-function allCategoryChart() {
+  //c3chart 全類別營收比重
   const chart = c3.generate({
     bindto: "#sortByCategoryChart",
     data: {
@@ -181,7 +197,7 @@ function allCategoryChart() {
   });
 }
 
-//取得productTotal
+//LV2全產品營收比重
 function changeTotal(item) {
   if (productTotal[item.title] == undefined) {
     productTotal[item.title] = item.quantity * item.price;
@@ -189,33 +205,30 @@ function changeTotal(item) {
     productTotal[item.title] += item.quantity * item.price;
   }
 }
-//取得totalData
-function toTotalData() {
+function allProductsChart() {
+  //取得totalData
   let title = Object.keys(productTotal);
   title.forEach(function (item) {
     let arr = [item];
     arr.push(productTotal[item]);
     totalData.push(arr);
   });
-}
-//取得totalTop3
-function sortByTotal() {
-  totalData.sort((a, b) => b[1] - a[1]);
 
-  let otherTotal = 0;
+  //取得totalTop3
+  totalData.sort((a, b) => b[1] - a[1]);
+  let total;
   totalData.forEach(function (item, index) {
     if (index < 3) {
       totalTop3.push(item);
     } else {
-      otherTotal += item[1];
+      let other = ["其他品項"];
+      total += item[1];
+      other.push(total);
+      totalTop3.push(other);
     }
   });
-  let other = ["其他"];
-  other.push(otherTotal);
-  totalTop3.push(other);
-}
-//c3chart 全產品營收比重
-function allProductsChart() {
+
+  //c3chart 全產品營收比重
   var chart = c3.generate({
     bindto: "#sortByProductsChart",
     data: {
