@@ -85,12 +85,12 @@ function toRenderCartStr(item, index) {
     <td>NT$${price}</td>
     <td>
     <a href="#">
-    <span class="material-icons" data-num="${item.quantity - 1}" data-id="${
-    item.id
-  }">remove</span></a>
+    <span class="material-icons remove" data-num="${
+      item.quantity - 1
+    }" data-id="${item.id}">remove</span></a>
     <span>${item.quantity}</span>
     <a href="#">
-    <span class="material-icons" data-num="${item.quantity + 1}" data-id="${
+    <span class="material-icons add" data-num="${item.quantity + 1}" data-id="${
     item.id
   }">add</span></a>
     </td>

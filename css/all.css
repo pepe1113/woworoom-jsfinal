@@ -867,9 +867,9 @@ body {
     display: none;
 }
 
-.material-icons{
+.add,.remove{
   color:#6A33F8;
 }
-.material-icons:hover{
+.add:hover,.remove:hover{
   color:#c0aafd;
 }
